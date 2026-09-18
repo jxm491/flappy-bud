@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.Dimension;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Random;
@@ -11,6 +10,8 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
 
     // Images
     Image backgroundImg;
+    Image openingImage;
+    Image btnTapToPlayImage;
     Image budImg;
     Image topPipeImg;
     Image bottomPipeImg;
@@ -36,7 +37,7 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
     //Pipes
     int pipeX = boardWidth;
     int pipeY = -30;
-    int pipeWidth = 154;
+    int pipeWidth = 164;
     int pipeHeight = 412;
 
     class Pipe {
@@ -53,7 +54,12 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
     }
 
     // game logic
+    boolean gameStarted = false;
+
+    JButton playButton;
+
     Bud bud;
+
     int velocityX = -4; // rate at which the pipes move to the left
     int velocityY = 0;
     int gravity = 1;
@@ -65,20 +71,50 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
     Timer placePipesTimer;
 
     FlappyBud() {
+
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         // setBackground(Color.blue);
         setFocusable(true);
+        setLayout(null);
+
         addKeyListener(this);
 
         // load images
+        openingImage = new ImageIcon(getClass().getResource("./openingimage.png")).getImage();
+        btnTapToPlayImage = new ImageIcon(getClass().getResource( "./btn-taptoplay.png")).getImage();
         backgroundImg = new ImageIcon(getClass().getResource("./flappybirdbg.png")).getImage();
         budImg = new ImageIcon(getClass().getResource("./flappybud.png")).getImage();
         topPipeImg = new ImageIcon(getClass().getResource("./toppipe.png")).getImage();
+        bottomPipeImg = new ImageIcon(getClass().getResource("./bottompipe.png")).getImage();
 
         // bud
         bud = new Bud(budImg);
         pipes = new ArrayList<Pipe>();
 
+        // play button
+        int buttonWidth = 220; 
+        int buttonHeight = 70; 
+
+        Image scaledButtonImage = btnTapToPlayImage.getScaledInstance( buttonWidth, buttonHeight, Image.SCALE_SMOOTH );
+        playButton = new JButton(new ImageIcon(scaledButtonImage));
+        
+        int buttonX = (boardWidth - buttonWidth) / 2;
+
+        int buttonY = boardHeight - 120;
+        
+        playButton.setBounds( buttonX, buttonY, buttonWidth, buttonHeight );
+        
+        playButton.setBorderPainted(false);
+        playButton.setContentAreaFilled(false);
+        playButton.setFocusPainted(false);
+        playButton.setOpaque(false);
+
+        playButton.setMargin(new Insets(0, 0, 0, 0));
+
+        playButton.addActionListener(e -> startGame());
+
+        add(playButton);
+        
         // place pipes timer
         placePipesTimer = new Timer(1500, new ActionListener() {
             @Override
@@ -86,12 +122,28 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
                 placePipes();
             }
         });
-        placePipesTimer.start();
 
 
         // game timer
         gameLoop = new Timer(1000/60, this); //1000/60 = 16.6
+    }
+
+    public void startGame() {
+        gameStarted = true;
+
+        playButton.setVisible(false);
+
+        pipes.clear();
+
+        bud.y = boardHeight / 2;
+        velocityY = 0;
+
+        placePipesTimer.start();
         gameLoop.start();
+
+        requestFocusInWindow();
+
+        repaint();
     }
 
     public void placePipes() {
@@ -100,7 +152,7 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
         // 0 - 128 - (0-256) --> pipeHeight/4 -> 3/4 piepHeight
  
         int randomPipeY = (int) (pipeY - pipeHeight/4 - Math.random() * (pipeHeight/2));
-        int openingSpace = boardHeight/4;
+        int openingSpace = 200;
         
         Pipe topPipe = new Pipe(topPipeImg);
         topPipe.y = randomPipeY; 
@@ -112,8 +164,16 @@ public class FlappyBud extends JPanel implements ActionListener, KeyListener {
 
     }
 
+    @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+
+        // opening screen
+       if (!gameStarted) {
+            g.drawImage(openingImage, 0, 0, boardWidth, boardHeight, null);
+            return;
+        }
+
         draw(g);
     }
     
